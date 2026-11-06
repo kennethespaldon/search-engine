@@ -81,7 +81,11 @@ def build_partial (root, size = 5, limit = 12) :
 
         # Add each term's document ID and frequency to its posting list
         for term, stats in doc.terms.items():
-            index[term].append((doc.doc_id, stats.tf))
+            index[term].append((doc.doc_id,
+                                stats.tf,
+                                stats.title,
+                                stats.heading,
+                                stats.bold))
 
         # Save the current index when a batch is completed
         if doc_count % size == 0:
