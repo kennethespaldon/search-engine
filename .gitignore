@@ -1,3 +1,4 @@
 DEV/
 __pycache__/
 .venv/
+output/
