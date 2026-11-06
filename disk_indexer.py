@@ -117,7 +117,7 @@ def build_partial (root, size = 5, limit = 12) :
     print("Partial indexes processed: ", partial_count)
 
 if __name__ == "__main__":
-    build_partial("DEV", size=5, limit=12)
+    build_partial("DEV", size=5000, limit=None)
     merge_partials()
 
 
