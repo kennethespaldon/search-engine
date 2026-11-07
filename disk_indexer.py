@@ -65,6 +65,10 @@ def merge_partials ():
 def build_partial (root, size = 5, limit = 12) :
     output = Path("output/partials")
 
+    # Remove the partial files from previous run if they exists
+    for old_file in output.glob("partial_*.jsonl"):
+        old_file.unlink()
+
     # Create the output directory if it doesn't exist
     output.mkdir(parents=True, exist_ok=True)
 
@@ -115,6 +119,8 @@ def build_partial (root, size = 5, limit = 12) :
 
     print("Documents Processed: ", doc_count)
     print("Partial indexes processed: ", partial_count)
+
+    
 
 if __name__ == "__main__":
     build_partial("DEV", size=5000, limit=None)
