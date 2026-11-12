@@ -35,3 +35,19 @@ To display the index statistics, run:
 ```bash
 python index_stats.py
 ```
+
+## Searching
+
+After building the inverted index, build the term lookup:
+
+```bash
+python build_lookup.py
+```
+
+Then start the search prompt:
+
+```bash
+python search.py
+```
+
+Enter a query to see the top 10 matching URLs. Press Enter on an empty line or type `quit` to exit.
