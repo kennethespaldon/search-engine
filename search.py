@@ -7,7 +7,7 @@ Query words that aren't in the index are ignored.
 
 Pages are ranked by a tf-idf score that uses BM25 to limit the effect of
 repeated words and long pages, with extra weight for terms in titles, headings,
-and bold text.
+and bold text, and a small preference for pages with shorter URLs.
 
 Run disk_indexer.py, build_lookup.py, and build_sparse_lookup.py before
 searching:
@@ -18,9 +18,11 @@ searching:
 import heapq
 import json
 import math
+import re
 from array import array
 from collections import Counter
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from nltk.stem import PorterStemmer
 from sparse_index_reader import SparseIndexReader
@@ -37,6 +39,9 @@ BOLD_W = 0.1
 # score. B controls how strongly long pages are penalized (0 = not at all).
 K1 = 1.2
 B = 0.75
+
+# Largest share of its score that a page can gain for having a short URL.
+DEPTH_W = 0.1
 
 INDEX_FILE = Path("output/merged_index.jsonl")
 LENGTHS_FILE = Path("output/doc_lengths.json")
@@ -99,6 +104,32 @@ def doc_weight(tf, title, heading, bold, relative_length):
     return weight
 
 
+def url_depth(url):
+    """
+    Returns how deep a URL is: its number of path segments, plus 1 if it has a
+    query string. index files don't count, since /a/index.html is the same
+    level as /a/. A homepage has depth 0.
+    """
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return url.count("/")  # Malformed URL: use a rough depth
+    segments = [segment for segment in parts.path.split("/")
+                if segment and not re.fullmatch(r"index\.\w+", segment)]
+    return len(segments) + bool(parts.query)
+
+
+def depth_boost(url):
+    """
+    Returns the number to multiply a page's score by, based on its URL depth.
+
+    Main pages usually have shorter URLs, so they get a slightly larger boost:
+    1.1 for a homepage, then 1.05, 1.033, and so on. It is always above 1 and
+    at most 1 + DEPTH_W, so it mostly decides between pages with close scores.
+    """
+    return 1 + DEPTH_W / (1 + url_depth(url))
+
+
 class SearchEngine:
     def __init__(self):
         self.reader = SparseIndexReader()
@@ -106,6 +137,10 @@ class SearchEngine:
         self.doc_count = len(self.reader.doc_urls)
         self.doc_lengths = load_doc_lengths(self.doc_count)
         self.avg_length = sum(self.doc_lengths) / self.doc_count
+        # Computed once here because parsing URLs during a search is slow.
+        self.depth_boosts = array("d", (
+            depth_boost(self.reader.get_url(doc_id))
+            for doc_id in range(self.doc_count)))
 
     def parse_query(self, query):
         """Returns a Counter of stemmed query terms, using the indexer's pipeline."""
@@ -155,6 +190,10 @@ class SearchEngine:
                     relative_length = self.doc_lengths[doc_id] / self.avg_length
                     scores[doc_id] += wq * doc_weight(
                         tf, title, heading, bold, relative_length)
+
+        # Slightly prefer pages with shorter URLs.
+        for doc_id in scores:
+            scores[doc_id] *= self.depth_boosts[doc_id]
 
         # Highest score first. Equal scores are ordered by lower doc ID.
         top = heapq.nsmallest(
