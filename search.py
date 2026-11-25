@@ -1,10 +1,13 @@
 """
 Console search engine over the on-disk inverted index.
 
-Queries are boolean AND: a page must contain every query term. Matching pages
-are ranked by a tf-idf score that uses BM25 to limit the effect of repeated
-words and long pages, with extra weight for terms in titles, headings, and bold
-text.
+Pages that contain every query term are found first. If there are too few,
+pages that contain any of the terms are included too.
+Query words that aren't in the index are ignored.
+
+Pages are ranked by a tf-idf score that uses BM25 to limit the effect of
+repeated words and long pages, with extra weight for terms in titles, headings,
+and bold text.
 
 Run disk_indexer.py, build_lookup.py, and build_sparse_lookup.py before
 searching:
@@ -108,34 +111,46 @@ class SearchEngine:
         """Returns a Counter of stemmed query terms, using the indexer's pipeline."""
         return Counter(self.stemmer.stem(token) for token in tokenize(query))
 
+    def _pages_with_all(self, term_postings):
+        """Returns the set of doc IDs that contain every term."""
+        # Start from the rarest term so the candidate set stays small.
+        terms = sorted(term_postings, key=lambda t: len(term_postings[t]))
+        pages = {p[0] for p in term_postings[terms[0]]}
+        for term in terms[1:]:
+            if not pages:
+                break
+            pages &= {p[0] for p in term_postings[term]}
+        return pages
+
     def search(self, query, k=10):
         """Returns up to k (url, score) pairs, best first."""
         query_terms = self.parse_query(query)
         if not query_terms:
             return []
 
+        # Words that aren't in the index can't match any page, so ignore them.
         term_postings = {}
         for term in query_terms:
             postings = self.reader.get_postings(term)
-            if not postings:
-                return []  # AND: a missing term means no page has every term
-            term_postings[term] = postings
+            if postings:
+                term_postings[term] = postings
+        if not term_postings:
+            return []
 
-        # Intersect starting from the rarest term so the candidate set stays small.
-        terms = sorted(term_postings, key=lambda t: len(term_postings[t]))
-        candidates = {p[0] for p in term_postings[terms[0]]}
-        for term in terms[1:]:
-            candidates &= {p[0] for p in term_postings[term]}
-            if not candidates:
-                return []
+        # Prefer pages with every term (AND). If there are too few to fill the
+        # results, use pages with any of the terms instead (OR).
+        candidates = self._pages_with_all(term_postings)
+        if len(candidates) < k:
+            for postings in term_postings.values():
+                candidates.update(p[0] for p in postings)
 
         # Score = sum over query terms of query weight (log qtf * idf)
         # times page weight (BM25 plus bonuses).
         scores = dict.fromkeys(candidates, 0.0)
-        for term in terms:
-            idf = math.log10(self.doc_count / len(term_postings[term]))
+        for term, postings in term_postings.items():
+            idf = math.log10(self.doc_count / len(postings))
             wq = (1 + math.log10(query_terms[term])) * idf
-            for doc_id, tf, title, heading, bold in term_postings[term]:
+            for doc_id, tf, title, heading, bold in postings:
                 if doc_id in scores:
                     relative_length = self.doc_lengths[doc_id] / self.avg_length
                     scores[doc_id] += wq * doc_weight(
