@@ -15,8 +15,7 @@ import math
 from collections import Counter
 
 from nltk.stem import PorterStemmer
-
-from index_reader import IndexReader
+from sparse_index_reader import SparseIndexReader
 from tokenizer import tokenize
 
 # Extra weight given to an occurrence inside important text, on top of the
@@ -39,7 +38,7 @@ def doc_weight(tf, title, heading, bold):
 
 class SearchEngine:
     def __init__(self):
-        self.reader = IndexReader()
+        self.reader = SparseIndexReader()
         self.stemmer = PorterStemmer()
         self.doc_count = len(self.reader.doc_urls)
 
