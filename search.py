@@ -23,12 +23,12 @@ from nltk.stem import PorterStemmer
 from sparse_index_reader import SparseIndexReader
 from tokenizer import tokenize
 
-# Extra weight given to an occurrence inside important text, on top of the
-# 1 it already counts toward tf. One occurrence can count toward several.
-TITLE_W = 2.0
-HEADING_W = 1.5
-BOLD_W = 0.5
-
+# Bonus for a term that appears at least once in each kind of important text.
+# The bonuses are small next to the BM25 weight's limit of K1 + 1, so important
+# text helps a page without replacing how well the rest of the page matches.
+TITLE_W = 0.5
+HEADING_W = 0.25
+BOLD_W = 0.1
 
 # BM25 constants. K1 controls how quickly repeating a term stops adding to the
 # score. B controls how strongly long pages are penalized (0 = not at all).
@@ -73,19 +73,27 @@ def load_doc_lengths(doc_count):
 
 def doc_weight(tf, title, heading, bold, relative_length):
     """
-    Returns the BM25 weight of a term in a page.
+    Returns the weight of a term in a page: BM25 plus important-text bonuses.
 
-    Occurrences in titles, headings, and bold text are boosted first, so
-    important words count for more. relative_length is the page's length
-    divided by the average length.
+    relative_length is the page's length divided by the average length. The
+    BM25 part rises with tf but never reaches K1 + 1, so repeating a word many
+    times can't dominate. A longer page needs more occurrences to reach the
+    same weight.
 
-    The weight rises with the boosted tf but never reaches K1 + 1, so repeating
-    a word many times can't dominate. A longer page needs more occurrences to
-    reach the same weight.
+    The bonuses are added after BM25 so that they aren't flattened by its
+    limit. Each is given at most once per term, so repeating a word in bold
+    text or headings can't inflate the score.
     """
-    weighted_tf = tf + TITLE_W * title + HEADING_W * heading + BOLD_W * bold
     length_factor = 1 - B + B * relative_length
-    return weighted_tf * (K1 + 1) / (weighted_tf + K1 * length_factor)
+    weight = tf * (K1 + 1) / (tf + K1 * length_factor)
+
+    if title:
+        weight += TITLE_W
+    if heading:
+        weight += HEADING_W
+    if bold:
+        weight += BOLD_W
+    return weight
 
 
 class SearchEngine:
@@ -122,7 +130,7 @@ class SearchEngine:
                 return []
 
         # Score = sum over query terms of query weight (log qtf * idf)
-        # times page weight (BM25 of boosted tf).
+        # times page weight (BM25 plus bonuses).
         scores = dict.fromkeys(candidates, 0.0)
         for term in terms:
             idf = math.log10(self.doc_count / len(term_postings[term]))
