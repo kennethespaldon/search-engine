@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1020">
+    <title>Search — Discover what matters</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="shell" id="app" data-search-url="{{ url_for('api_search') }}">
+        <nav class="topbar" aria-label="Page controls">
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch color theme"
+                title="Switch color theme">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20.9 13.2A9 9 0 0 1 10.8 3.1 9 9 0 1 0 20.9 13.2Z" />
+                </svg>
+            </button>
+        </nav>
+
+        <main class="page">
+            <header class="hero">
+
+                <h1>Find what <span class="gradient-text">matters.</span></h1>
+
+
+                <form class="search-form" id="form" role="search" autocomplete="off">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" aria-hidden="true">
+                        <circle cx="10.8" cy="10.8" r="7.2" />
+                        <path d="m16.3 16.3 4.3 4.3" />
+                    </svg>
+                    <input id="q" type="search" name="q" placeholder="Search across indexed pages…"
+                        aria-label="Search query" autofocus>
+                    <button class="search-submit" type="submit">Search</button>
+                </form>
+                <div class="suggestions" id="chips" aria-label="Suggested searches">
+                    <span class="suggestions-label">Try searching</span>
+                    <button class="chip" type="button">Cristina Lopes</button>
+                    <button class="chip" type="button">Machine learning</button>
+                    <button class="chip" type="button">ACM</button>
+                    <button class="chip" type="button">Master of software engineering</button>
+                </div>
+            </header>
+
+            <section class="results" id="results" aria-live="polite" aria-label="Search results">
+                <div class="results-top">
+                    <div>
+                        <h2>Search results</h2>
+                        <p class="meta" id="meta"></p>
+                    </div>
+                    <button class="reset-button" id="newSearch" type="button">New search</button>
+                </div>
+                <div class="result-list" id="list"></div>
+            </section>
+        </main>
+        <footer>Search engine demo · Press / or Ctrl + K to focus search</footer>
+    </div>
+
+    <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+
+</html>
