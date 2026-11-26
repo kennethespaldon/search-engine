@@ -172,13 +172,6 @@ document.getElementById("chips").addEventListener("click", event => {
 
 document.getElementById("newSearch").addEventListener("click", reset);
 
-document.addEventListener("keydown", event => {
-  const focusShortcut = (event.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) ||
-    ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k");
-  if (focusShortcut) { event.preventDefault(); input.focus(); }
-  if (event.key === "Escape" && document.activeElement === input) input.blur();
-});
-
 themeToggle.addEventListener("click", () => {
   const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", next);

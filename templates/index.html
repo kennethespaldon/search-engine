@@ -34,7 +34,7 @@
                         <path d="m16.3 16.3 4.3 4.3" />
                     </svg>
                     <input id="q" type="search" name="q" placeholder="Search across indexed pages…"
-                        aria-label="Search query" autofocus>
+                        aria-label="Search query">
                     <button class="search-submit" type="submit">Search</button>
                 </form>
                 <div class="suggestions" id="chips" aria-label="Suggested searches">
@@ -57,7 +57,7 @@
                 <div class="result-list" id="list"></div>
             </section>
         </main>
-        <footer>Search engine demo · Press / or Ctrl + K to focus search</footer>
+        <footer>Search engine demo</footer>
     </div>
 
     <script defer src="{{ url_for('static', filename='app.js') }}"></script>
