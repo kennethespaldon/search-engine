@@ -70,17 +70,6 @@ ranked by relevance. Enter an empty query or type 'quit' to exit.
 The final search.py should use SparseIndexReader from
 sparse_index_reader.py so that the sparse lookup is used during searches.
 
-PERFORMANCE AND TESTING (OPTIONAL)
-If the corresponding test scripts are included, run:
-
-    python test_sparse_reader.py
-    python compare_performance.py original
-    python compare_performance.py sparse
-
-The correctness test compares posting lists returned by the original and
-sparse readers. The performance script measures memory use, startup time,
-and query-response times separately for each reader.
-
 NOTES
 - Run all commands from the project's root directory.
 - Index generation may take time on the full DEV corpus.
