@@ -46,7 +46,10 @@ def main():
     print(f"Startup time: {elapsed:.2f} seconds")
     print(f"Current Python memory: {current / 1024**2:.2f} MB")
     print(f"Peak Python memory: {peak / 1024**2:.2f} MB")
-    print(f"Terms in lookup: {len(engine.reader.offsets):,}")
+    with open(engine.reader.lookup_file, "r", encoding="utf-8") as f:
+        term_count = sum(1 for _ in f)
+
+    print(f"Terms in lookup: {term_count:,}")
     print(f"Documents: {engine.doc_count:,}")
 
     tracemalloc.stop()
